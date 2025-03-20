@@ -14,6 +14,8 @@ This is taking a 2D pixel art in-world schematic (check out my image to schemati
 
 This will take a plane at a specific Y level and replace any base blocks (I used stone here) in that column, above and below, to the block at the Y level. This works by modifying the region files directly. This was stupid, and I tried every other way to project a plane onto terrain I could think of yet here we are. It works.
 
+This is in Minecraft 1.21
+
 ### Code Stuffs:
 
 This is on python 3.12.2
