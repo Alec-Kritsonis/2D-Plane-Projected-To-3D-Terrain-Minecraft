@@ -8,36 +8,6 @@ BS_INDEXES = 4096
 SECTION_HEIGHT = 16
 CHUNK_SIZE = (16, 16)
 
-def _decode_blockstates(data, palette=None):
-  """Decode an NBT BlockStates LongArray to a block state indexes array"""
-  pack_bits = data.itemsize * 8  # 64 bits for each Long Array element
-
-  def bits_per_index():
-      """the size required to represent the largest index (minimum of 4 bits)"""
-      def bits_from_data(): return len(data) * pack_bits // BS_INDEXES
-      if not palette:
-          # Infer from data length (not the way described by Wiki!)
-          return bits_from_data()
-      bit_length = max(BS_MIN_BITS, (len(palette) - 1).bit_length())
-      assert bit_length == bits_from_data(), \
-          f"BlockState bits mismatch: {bit_length} != {bits_from_data()}"
-      return bit_length
-
-  bits = bits_per_index()
-
-  # Adapted from Amulet-Core's decode_long_array()
-  # https://github.com/Amulet-Team/Amulet-Core/blob/develop/amulet/utils/world_utils.py
-  indexes = np.packbits(
-      np.pad(
-          np.unpackbits(
-                  data[::-1].astype(f">i{pack_bits//8}").view(f"uint{pack_bits//8}")
-              ).reshape(-1, bits),
-          [(0, 0), (pack_bits - bits, 0)],
-          "constant",
-      )
-  ).view(dtype=">q")[::-1]
-  return indexes
-
 def decode_long_array(
     data: np.ndarray,
     size: int,
@@ -111,30 +81,6 @@ def decode_long_array(
             )
         arr = sarray
     return arr
-
-def _encode_blockstates(indexes, palette):
-    """Encode a block state indexes array into an NBT BlockStates LongArray"""
-
-    pack_bits = 64  # Each long has 64 bits
-    bits = max(4, (len(palette) - 1).bit_length())  # Ensure min 4 bits per block
-    blocks_per_long = pack_bits // bits  # How many blocks fit in a 64-bit long?
-
-    # Flatten the 3D block index array to 1D
-    indexes_flat = indexes.flatten()
-
-    # Pad to ensure a multiple of blocks_per_long
-    pad_size = (blocks_per_long - (len(indexes_flat) % blocks_per_long)) % blocks_per_long
-    indexes_flat = np.pad(indexes_flat, (0, pad_size), "constant")
-
-    # Pack indices into 64-bit longs
-    packed_data = np.zeros(len(indexes_flat) // blocks_per_long, dtype=np.int64)
-
-    for i in range(len(packed_data)):
-        for j in range(blocks_per_long):
-            shift = j * bits
-            packed_data[i] |= (indexes_flat[i * blocks_per_long + j] & ((1 << bits) - 1)) << shift
-
-    return packed_data
 
 def encode_long_array(
     data: np.ndarray,
@@ -229,13 +175,7 @@ def encode_long_array(
 
 def bits_per_index(data, palette, pack_bits):
   """the size required to represent the largest index (minimum of 4 bits)"""
-  # def bits_from_data(): return len(data) * pack_bits // BS_INDEXES
-  # if not palette:
-  #     # Infer from data length (not the way described by Wiki!)
-  #     return bits_from_data()
   bit_length = max(BS_MIN_BITS, (len(palette) - 1).bit_length())
-  # assert bit_length == bits_from_data(), \
-  #     f"BlockState bits mismatch: {bit_length} != {bits_from_data()}"
 
   return bit_length
 
@@ -256,12 +196,7 @@ def get_section_blocks(section):
 
     palette = block_states['palette']
 
-    # indexes = _decode_blockstates(block_states['data'], palette)
-
     indexes = decode_long_array(np.array(block_states['data']), 16 * 16 * 16, palette)
     indexes = indexes.reshape((SECTION_HEIGHT, *reversed(CHUNK_SIZE)))
 
-    # print(palette)
-    # print(indexes)
-    # print(type(indexes))
     return palette, indexes

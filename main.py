@@ -1,18 +1,11 @@
-import os
 import mcworldlib as mc
-from mcworldlib.anvil import RegionFile
-from nbtlib import String
 import nbtlib
 import util
-
-### This requires 5 unique blocks to be placed in the section as the palette needs to pull from block 5
 
 def block_name(bid):
   return bid.split(':', 1)[-1].replace('_', ' ').title()
 
 WORLD_PATH = "C:\\Users\\aleck\\AppData\\Roaming\\.fabric1.21\\saves\\world_geotiff"
-# WORLD_PATH = "C:\\Users\\aleck\\AppData\\Roaming\\.fabric1.21\\saves\\MCA Test"
-# MAP_Y = 31
 MAP_Y = 135
 BASE_BLOCK = 'minecraft:stone'
 AIR_BLOCK = 'minecraft:air'
@@ -81,12 +74,9 @@ def overwrite_section(section, blocks_map):
 
   indexes = indexes[:, ::-1, ::-1]
   encoded = util.encode_long_array(indexes, palette)
-  # encoded = util._encode_blockstates(indexes, palette)
 
   section['block_states']['data'] = nbtlib.LongArray(encoded)
   section['block_states']['palette'] = palette
-
-  # region.save()
 
 ################################################################################
 ################################################################################
@@ -101,10 +91,6 @@ if __name__ == "__main__":
   regions = world.regions[mc.OVERWORLD]
 
   for coords, region in regions.items():
-  # region = regions[13, 9]
-  # region = regions[1, 0]
-  # chunk = region[30, 1]
-  # chunk = region[2, 1]
     print(f"Working on region {coords}")
     for chunk in region.chunks:
       # print(f"\tWorking on chunk {chunk}")
